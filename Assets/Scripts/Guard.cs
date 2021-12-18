@@ -20,6 +20,8 @@ public class Guard : MonoBehaviour
             waypoints[i] = new Vector3(waypoints[i].x, transform.position.y, waypoints[i].z);
         }
 
+        transform.position = waypoints[0];
+        transform.LookAt(waypoints[1]);
         StartCoroutine(FollowPath());
     }
     private void OnDrawGizmos()
@@ -40,16 +42,44 @@ public class Guard : MonoBehaviour
         while (!gameOver)
         {
             foreach (Vector3 waypoint in waypoints)
-            {
+            {           
+                yield return StartCoroutine(LookAtTarget(waypoint));
+
                 while (transform.position != waypoint)
                 {
                     transform.position = Vector3.MoveTowards(transform.position, waypoint, speed * Time.deltaTime);
                     yield return null;
                 }
 
-                yield return new WaitForSeconds(pauseDuration);
+                yield return new WaitForSeconds(pauseDuration);               
             }    
         }
            
     }
+
+    IEnumerator LookAtTarget(Vector3 lookTarget)
+    {
+        Vector3 directionToWaypoint = (lookTarget - transform.position).normalized;
+        //Debug.Log("directionToWaypoint: " + directionToWaypoint);
+        float angleToWaypoint = Mathf.Atan2(directionToWaypoint.x, directionToWaypoint.z) * Mathf.Rad2Deg;
+        Debug.Log("angleToWaypoint: " + angleToWaypoint);
+        //Vector3 targetEulers = new Vector3(transform.eulerAngles.x, angleToWaypoint, transform.eulerAngles.z);
+        //Debug.Log("targetEulers: " + targetEulers);
+        while(Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, angleToWaypoint)) > 0.05f)
+        {
+            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, angleToWaypoint, 45 * Time.deltaTime);
+            transform.eulerAngles = Vector3.up * angle;
+            yield return null;
+        }
+
+        
+        // Quaternion targetRotation = Quaternion.LookRotation(lookTarget, Vector3.up);
+        // while (Mathf.DeltaAngle(transform.eulerAngles.y, targetRotation.eulerAngles.y) > 0.1f)
+        // {
+        //     transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 0.1f * Time.deltaTime);
+        //     yield return null;
+        // }       
+    }
 }
+
+
