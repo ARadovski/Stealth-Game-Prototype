@@ -8,6 +8,7 @@ public class Guard : MonoBehaviour
 
     Vector3[] waypoints;
     public float speed = 3;
+    public float turnSpeed = 80;
     public float pauseDuration = 1;
 
     bool gameOver;
@@ -43,8 +44,10 @@ public class Guard : MonoBehaviour
         {
             foreach (Vector3 waypoint in waypoints)
             {           
-                yield return StartCoroutine(LookAtTarget(waypoint));
-
+                if (transform.position != waypoint){
+                    yield return StartCoroutine(LookAtTarget(waypoint));
+                }
+                
                 while (transform.position != waypoint)
                 {
                     transform.position = Vector3.MoveTowards(transform.position, waypoint, speed * Time.deltaTime);
@@ -60,14 +63,12 @@ public class Guard : MonoBehaviour
     IEnumerator LookAtTarget(Vector3 lookTarget)
     {
         Vector3 directionToWaypoint = (lookTarget - transform.position).normalized;
-        //Debug.Log("directionToWaypoint: " + directionToWaypoint);
         float angleToWaypoint = Mathf.Atan2(directionToWaypoint.x, directionToWaypoint.z) * Mathf.Rad2Deg;
-        Debug.Log("angleToWaypoint: " + angleToWaypoint);
         //Vector3 targetEulers = new Vector3(transform.eulerAngles.x, angleToWaypoint, transform.eulerAngles.z);
-        //Debug.Log("targetEulers: " + targetEulers);
+        
         while(Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, angleToWaypoint)) > 0.05f)
         {
-            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, angleToWaypoint, 45 * Time.deltaTime);
+            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, angleToWaypoint, turnSpeed * Time.deltaTime);
             transform.eulerAngles = Vector3.up * angle;
             yield return null;
         }
