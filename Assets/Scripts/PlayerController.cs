@@ -4,34 +4,38 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed = 1;
-    float yAngle;
-    float previousAngle = 1;
+    public float speed = 5; 
+    public float smoothMoveTime = .1f;
+    public float rotationSpeed = 10;
+    float targetAngle;
+    float angle;
+    float smoothInputMagnitude;
+    float smoothMoveVelocity;
+    Vector3 velocity;
     Rigidbody playerRb;
-    Vector3 direction;
+    Vector3 inputDirection;
 
-    // Start is called before the first frame update
     void Start()
     {
         playerRb = GetComponent<Rigidbody>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        //transform.position += new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized * speed;
+        inputDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
+        float inputMagnitude = inputDirection.magnitude;
+        smoothInputMagnitude = Mathf.SmoothDamp(smoothInputMagnitude, inputMagnitude, ref smoothMoveVelocity, smoothMoveTime);
+        velocity = transform.forward * speed * smoothInputMagnitude;
         
-        // forceDir = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-        // playerRb.AddForce(forceDir * speed, ForceMode.VelocityChange);
+        targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg;
+        angle = Mathf.LerpAngle(angle, targetAngle, rotationSpeed * Time.deltaTime * inputMagnitude);
+       
+    }
 
-        direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-        transform.Translate(direction * speed, Space.World);
-
-        if(Input.GetAxisRaw("Horizontal") != 0 || Input.GetAxisRaw("Vertical") != 0)
-        {
-            yAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            transform.eulerAngles = new Vector3(transform.eulerAngles.x, yAngle, transform.eulerAngles.z);
-            float previousAngle = yAngle;
-        }      
+    void FixedUpdate()
+    {
+        // Multiplying by magnitude to prevent direction from snapping to default orientation on key release
+        playerRb.MoveRotation(Quaternion.Euler(Vector3.up * angle));
+        playerRb.MovePosition(playerRb.position + velocity * Time.deltaTime);
     }
 }
