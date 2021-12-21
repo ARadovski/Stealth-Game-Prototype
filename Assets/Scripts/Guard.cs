@@ -5,6 +5,9 @@ using UnityEngine;
 public class Guard : MonoBehaviour
 {
     public Transform pathHolder;
+    public Light spotlight;
+    public float visionRange;
+    float visionAngle;
 
     Vector3[] waypoints;
     public float speed = 3;
@@ -14,6 +17,8 @@ public class Guard : MonoBehaviour
     bool gameOver;
     private void Start()
     {
+        visionAngle = spotlight.spotAngle;
+
         waypoints = new Vector3[pathHolder.childCount];
         for (int i = 0; i < pathHolder.childCount; i++)
         {
@@ -36,6 +41,9 @@ public class Guard : MonoBehaviour
             previousPoint = waypoint;
         }    
         Gizmos.DrawLine(previousPoint.position, startPoint.position);
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, transform.forward * visionRange);
     }
 
     IEnumerator FollowPath()
