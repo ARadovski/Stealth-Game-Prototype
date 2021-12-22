@@ -643,8 +643,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
-  orthographic size: 5
+  orthographic: 1
+  orthographic size: 10.58
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -667,13 +667,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0.4244128, y: 0, z: 0, w: 0.9054689}
-  m_LocalPosition: {x: 2, y: 9.8, z: -6.7}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 2.09, y: 12.56, z: -1.84}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 50.227, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &1010569048
 GameObject:
   m_ObjectHideFlags: 0
@@ -737,6 +737,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pathHolder: {fileID: 2017298029}
+  playerPosition: {x: 0, y: 0, z: 0}
   spotlight: {fileID: 1445712063}
   visionRange: 10
   speed: 3
@@ -836,7 +837,7 @@ GameObject:
   - component: {fileID: 1190112138}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

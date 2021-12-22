@@ -5,19 +5,24 @@ using UnityEngine;
 public class Guard : MonoBehaviour
 {
     public Transform pathHolder;
+    public Transform player;
     public Light spotlight;
     public float visionRange;
     float visionAngle;
 
     Vector3[] waypoints;
+    Vector3 vectorToPlayer;
     public float speed = 3;
     public float turnSpeed = 80;
     public float pauseDuration = 1;
 
     bool gameOver;
+
+    RaycastHit hit;
     private void Start()
     {
         visionAngle = spotlight.spotAngle;
+        player = FindObjectOfType<PlayerController>().transform;
 
         waypoints = new Vector3[pathHolder.childCount];
         for (int i = 0; i < pathHolder.childCount; i++)
@@ -43,7 +48,46 @@ public class Guard : MonoBehaviour
         Gizmos.DrawLine(previousPoint.position, startPoint.position);
 
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position, transform.forward * visionRange);
+        Gizmos.DrawRay(transform.position, transform.forward * visionRange);
+    }
+
+    private void Update()
+    {
+        
+    }
+    private void FixedUpdate()
+    {
+        vectorToPlayer = player.transform.position - transform.position;
+        if(Physics.Raycast(transform.position, vectorToPlayer, out hit, visionRange))
+        {
+            Debug.Log("Player within range");
+            spotlight.color = Color.green;
+            
+            
+            float angleToHit = Mathf.Atan2(vectorToPlayer.x, vectorToPlayer.z) * Mathf.Rad2Deg;
+            Debug.Log("Angle: " + angleToHit);
+            Vector3 vectorToHit = hit.point - transform.position;
+            Debug.DrawRay(transform.position, vectorToHit, Color.yellow);
+
+            if (Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)) < visionAngle/2)
+            {
+                Debug.Log("Delta: " + Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)));
+                Debug.Log ("Player within field of view");
+                spotlight.color = Color.yellow;
+                if (hit.collider.gameObject.CompareTag("Player"))
+                {
+                    Debug.Log("PLAYER CAUGHT!");
+                    //gameOver = true;
+                    
+                    spotlight.color = Color.red;
+                }
+            }
+            
+        } 
+        else {
+            Debug.Log("Player out of range");
+            spotlight.color = Color.white;
+        }
     }
 
     IEnumerator FollowPath()
