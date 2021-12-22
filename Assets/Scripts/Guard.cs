@@ -4,13 +4,16 @@ using UnityEngine;
 
 public class Guard : MonoBehaviour
 {
-    public Transform pathHolder;
-    public Transform player;
+    Transform pathHolder;
+    Transform player;
+
+    public LayerMask obstacleMask;
     public Light spotlight;
+    Color spotlightOrigColor;
     public float visionRange;
     float visionAngle;
 
-    Vector3[] waypoints;
+    Vector3[] waypoints = new Vector3[1];
     Vector3 vectorToPlayer;
     public float speed = 3;
     public float turnSpeed = 80;
@@ -22,7 +25,9 @@ public class Guard : MonoBehaviour
     private void Start()
     {
         visionAngle = spotlight.spotAngle;
-        player = FindObjectOfType<PlayerController>().transform;
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+        pathHolder = transform.Find("Path");
+        spotlightOrigColor = spotlight.color;
 
         waypoints = new Vector3[pathHolder.childCount];
         for (int i = 0; i < pathHolder.childCount; i++)
@@ -37,15 +42,15 @@ public class Guard : MonoBehaviour
     }
     private void OnDrawGizmos()
     {
-        Transform startPoint = pathHolder.GetChild(0);
-        Transform previousPoint = startPoint;
-        foreach (Transform waypoint in pathHolder)
+        Vector3 startPoint = waypoints[0];
+        Vector3 previousPoint = startPoint;
+        foreach (Vector3 waypoint in waypoints)
         {
-            Gizmos.DrawSphere(waypoint.position,.3f);
-            Gizmos.DrawLine(previousPoint.position, waypoint.position);
+            Gizmos.DrawSphere(waypoint,.3f);
+            Gizmos.DrawLine(previousPoint, waypoint);
             previousPoint = waypoint;
         }    
-        Gizmos.DrawLine(previousPoint.position, startPoint.position);
+        Gizmos.DrawLine(previousPoint, startPoint);
 
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, transform.forward * visionRange);
@@ -53,42 +58,66 @@ public class Guard : MonoBehaviour
 
     private void Update()
     {
-        
-    }
-    private void FixedUpdate()
-    {
-        vectorToPlayer = player.transform.position - transform.position;
-        if(Physics.Raycast(transform.position, vectorToPlayer, out hit, visionRange))
+        if (CanSeePlayer())
         {
-            Debug.Log("Player within range");
-            spotlight.color = Color.green;
-            
-            
-            float angleToHit = Mathf.Atan2(vectorToPlayer.x, vectorToPlayer.z) * Mathf.Rad2Deg;
-            Debug.Log("Angle: " + angleToHit);
-            Vector3 vectorToHit = hit.point - transform.position;
-            Debug.DrawRay(transform.position, vectorToHit, Color.yellow);
-
-            if (Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)) < visionAngle/2)
-            {
-                Debug.Log("Delta: " + Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)));
-                Debug.Log ("Player within field of view");
-                spotlight.color = Color.yellow;
-                if (hit.collider.gameObject.CompareTag("Player"))
-                {
-                    Debug.Log("PLAYER CAUGHT!");
-                    //gameOver = true;
-                    
-                    spotlight.color = Color.red;
-                }
-            }
-            
-        } 
-        else {
-            Debug.Log("Player out of range");
-            spotlight.color = Color.white;
+            spotlight.color = Color.red;
+        }
+        else 
+        {
+            spotlight.color = spotlightOrigColor;
         }
     }
+
+    // DEMO SOLUTION
+    bool CanSeePlayer()
+    {
+        if (Vector3.Distance(player.position, transform.position) < visionRange)
+        {
+            Vector3 dirToPlayer = player.position - transform.position;
+            if (Vector3.Angle(dirToPlayer, transform.forward) < visionAngle/2)
+            {
+                if (!Physics.Linecast(transform.position, player.position, obstacleMask))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // MY SOLUTION
+    // private void FixedUpdate()
+    // {
+    //     vectorToPlayer = player.transform.position - transform.position;
+    //     if(Physics.Raycast(transform.position, vectorToPlayer, out hit, visionRange))
+    //     {
+    //         Debug.Log("Player within range");
+    //         spotlight.color = Color.green;
+                       
+    //         float angleToHit = Mathf.Atan2(vectorToPlayer.x, vectorToPlayer.z) * Mathf.Rad2Deg;
+    //         Debug.Log("Angle: " + angleToHit);
+    //         Vector3 vectorToHit = hit.point - transform.position;
+    //         Debug.DrawRay(transform.position, vectorToHit, Color.yellow);
+
+    //         if (Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)) < visionAngle/2)
+    //         {
+    //             Debug.Log("Delta: " + Mathf.Abs(Mathf.DeltaAngle(angleToHit, transform.eulerAngles.y)));
+    //             Debug.Log ("Player within field of view");
+    //             spotlight.color = Color.yellow;
+    //             if (hit.collider.gameObject.CompareTag("Player"))
+    //             {
+    //                 Debug.Log("PLAYER CAUGHT!");
+    //                 //gameOver = true;                   
+    //                 spotlight.color = Color.red;
+    //             }
+    //         }
+            
+    //     } 
+    //     else {
+    //         Debug.Log("Player out of range");
+    //         spotlight.color = Color.white;
+    //     }
+    // }
 
     IEnumerator FollowPath()
     {

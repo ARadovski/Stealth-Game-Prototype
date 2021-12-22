@@ -14,6 +14,7 @@ public class PlayerController : MonoBehaviour
     Vector3 velocity;
     Rigidbody playerRb;
     Vector3 inputDirection;
+    public Vector3 cameraOffset;
 
     void Start()
     {
@@ -29,6 +30,8 @@ public class PlayerController : MonoBehaviour
         
         targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg;
         angle = Mathf.LerpAngle(angle, targetAngle, rotationSpeed * Time.deltaTime * inputMagnitude);
+
+        Camera.main.transform.position = transform.position + cameraOffset;
        
     }
 
