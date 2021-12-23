@@ -12,29 +12,25 @@ public class Guard : MonoBehaviour
     Color spotlightOrigColor;
     public float visionRange;
     float visionAngle;
+    public float timeToAlarm = 2;
+    float timeInSight;
 
     Vector3[] waypoints = new Vector3[1];
     Vector3 vectorToPlayer;
     public float speed = 3;
     public float turnSpeed = 80;
     public float pauseDuration = 1;
+    RaycastHit hit;
 
     bool gameOver;
-
-    RaycastHit hit;
     private void Start()
     {
         visionAngle = spotlight.spotAngle;
         player = GameObject.FindGameObjectWithTag("Player").transform;
-        pathHolder = transform.Find("Path");
+
         spotlightOrigColor = spotlight.color;
 
-        waypoints = new Vector3[pathHolder.childCount];
-        for (int i = 0; i < pathHolder.childCount; i++)
-        {
-            waypoints[i] = pathHolder.GetChild(i).position;
-            waypoints[i] = new Vector3(waypoints[i].x, transform.position.y, waypoints[i].z);
-        }
+        PopulatePath();
 
         transform.position = waypoints[0];
         transform.LookAt(waypoints[1]);
@@ -42,6 +38,8 @@ public class Guard : MonoBehaviour
     }
     private void OnDrawGizmos()
     {
+        PopulatePath();
+
         Vector3 startPoint = waypoints[0];
         Vector3 previousPoint = startPoint;
         foreach (Vector3 waypoint in waypoints)
@@ -58,13 +56,31 @@ public class Guard : MonoBehaviour
 
     private void Update()
     {
+        gameOver = player.GetComponent<PlayerController>().gameOver;
         if (CanSeePlayer())
         {
-            spotlight.color = Color.red;
+            spotlight.color = Color.Lerp(spotlight.color, Color.red, Time.deltaTime * timeToAlarm);
+            timeInSight += Time.deltaTime;
+            if (timeInSight >= timeToAlarm)
+            {
+                player.gameObject.GetComponent<PlayerController>().gameOver = true;
+            }
         }
         else 
         {
+            timeInSight = 0;
             spotlight.color = spotlightOrigColor;
+        }
+    }
+
+    void PopulatePath()
+    {
+        pathHolder = transform.Find("Path");
+        waypoints = new Vector3[pathHolder.childCount];
+        for (int i = 0; i < pathHolder.childCount; i++)
+        {
+            waypoints[i] = pathHolder.GetChild(i).position;
+            waypoints[i] = new Vector3(waypoints[i].x, transform.position.y, waypoints[i].z);
         }
     }
 
@@ -85,7 +101,50 @@ public class Guard : MonoBehaviour
         return false;
     }
 
-    // MY SOLUTION
+    IEnumerator FollowPath()
+    {
+        while (true)
+        {
+            foreach (Vector3 waypoint in waypoints)
+            {           
+                if (!gameOver && transform.position != waypoint){
+                    yield return StartCoroutine(LookAtTarget(waypoint));
+                }
+                
+                while (!gameOver && transform.position != waypoint)
+                {
+                    transform.position = Vector3.MoveTowards(transform.position, waypoint, speed * Time.deltaTime);
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(pauseDuration);               
+            }    
+        }
+           
+    }
+
+    IEnumerator LookAtTarget(Vector3 lookTarget)
+    {
+        Vector3 directionToWaypoint = (lookTarget - transform.position).normalized;
+        float angleToWaypoint = Mathf.Atan2(directionToWaypoint.x, directionToWaypoint.z) * Mathf.Rad2Deg;
+        //Vector3 targetEulers = new Vector3(transform.eulerAngles.x, angleToWaypoint, transform.eulerAngles.z);
+        
+        while(Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, angleToWaypoint)) > 0.05f)
+        {
+            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, angleToWaypoint, turnSpeed * Time.deltaTime);
+            transform.eulerAngles = Vector3.up * angle;
+            yield return null;
+        }    
+    }
+
+    // IEnumerator AlarmTimer()
+    // {
+    //     spotlight.color = Color.Lerp(spotlight.color, Color.red, Time.deltaTime * timeToAlarm);
+
+    //     yield return null;
+    // }
+
+    // MY SOLUTION TO PLAYER DETECTION
     // private void FixedUpdate()
     // {
     //     vectorToPlayer = player.transform.position - transform.position;
@@ -118,50 +177,6 @@ public class Guard : MonoBehaviour
     //         spotlight.color = Color.white;
     //     }
     // }
-
-    IEnumerator FollowPath()
-    {
-        while (!gameOver)
-        {
-            foreach (Vector3 waypoint in waypoints)
-            {           
-                if (transform.position != waypoint){
-                    yield return StartCoroutine(LookAtTarget(waypoint));
-                }
-                
-                while (transform.position != waypoint)
-                {
-                    transform.position = Vector3.MoveTowards(transform.position, waypoint, speed * Time.deltaTime);
-                    yield return null;
-                }
-
-                yield return new WaitForSeconds(pauseDuration);               
-            }    
-        }
-           
-    }
-
-    IEnumerator LookAtTarget(Vector3 lookTarget)
-    {
-        Vector3 directionToWaypoint = (lookTarget - transform.position).normalized;
-        float angleToWaypoint = Mathf.Atan2(directionToWaypoint.x, directionToWaypoint.z) * Mathf.Rad2Deg;
-        //Vector3 targetEulers = new Vector3(transform.eulerAngles.x, angleToWaypoint, transform.eulerAngles.z);
-        
-        while(Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, angleToWaypoint)) > 0.05f)
-        {
-            float angle = Mathf.MoveTowardsAngle(transform.eulerAngles.y, angleToWaypoint, turnSpeed * Time.deltaTime);
-            transform.eulerAngles = Vector3.up * angle;
-            yield return null;
-        }
-
-        
-        // Quaternion targetRotation = Quaternion.LookRotation(lookTarget, Vector3.up);
-        // while (Mathf.DeltaAngle(transform.eulerAngles.y, targetRotation.eulerAngles.y) > 0.1f)
-        // {
-        //     transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, 0.1f * Time.deltaTime);
-        //     yield return null;
-        // }       
-    }
 }
 
 
