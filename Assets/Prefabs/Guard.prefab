@@ -425,7 +425,7 @@ MonoBehaviour:
     m_Bits: 256
   spotlight: {fileID: 1042950021894356293}
   visionRange: 12
-  timeToAlarm: 1
+  timeToAlarm: 0.5
   speed: 4
   turnSpeed: 80
   pauseDuration: 1

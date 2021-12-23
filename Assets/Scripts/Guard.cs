@@ -21,10 +21,12 @@ public class Guard : MonoBehaviour
     public float turnSpeed = 80;
     public float pauseDuration = 1;
     RaycastHit hit;
-
-    bool gameOver;
+    GameStates gameStates;
     private void Start()
     {
+        gameStates = GameObject.FindObjectOfType<GameStates>();
+        gameStates.OnGameOver += StopAllCoroutines;
+
         visionAngle = spotlight.spotAngle;
         player = GameObject.FindGameObjectWithTag("Player").transform;
 
@@ -56,14 +58,13 @@ public class Guard : MonoBehaviour
 
     private void Update()
     {
-        gameOver = player.GetComponent<PlayerController>().gameOver;
         if (CanSeePlayer())
         {
             spotlight.color = Color.Lerp(spotlight.color, Color.red, Time.deltaTime * timeToAlarm);
             timeInSight += Time.deltaTime;
-            if (timeInSight >= timeToAlarm)
+            if (timeInSight >= timeToAlarm && !gameStates.winner)
             {
-                player.gameObject.GetComponent<PlayerController>().gameOver = true;
+                gameStates.gameOver = true;
             }
         }
         else 
@@ -107,11 +108,11 @@ public class Guard : MonoBehaviour
         {
             foreach (Vector3 waypoint in waypoints)
             {           
-                if (!gameOver && transform.position != waypoint){
+                if (transform.position != waypoint){
                     yield return StartCoroutine(LookAtTarget(waypoint));
                 }
                 
-                while (!gameOver && transform.position != waypoint)
+                while (transform.position != waypoint)
                 {
                     transform.position = Vector3.MoveTowards(transform.position, waypoint, speed * Time.deltaTime);
                     yield return null;

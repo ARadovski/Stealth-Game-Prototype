@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public bool gameOver;
     public float speed = 5; 
     public float smoothMoveTime = .1f;
     public float rotationSpeed = 10;
@@ -15,28 +14,25 @@ public class PlayerController : MonoBehaviour
     Vector3 velocity;
     Rigidbody playerRb;
     Vector3 inputDirection;
+    GameStates gameStates;
     public Vector3 cameraOffset;
 
     void Start()
     {
         playerRb = GetComponent<Rigidbody>();
+        gameStates = GameObject.FindObjectOfType<GameStates>();
+        gameStates.OnGameOver += FreezePlayer;
     }
 
     void Update()
     {
-        if(!gameOver){
-            GetInput();
-            MoveCamera();    
-        }    
+        GetInput();
+        MoveCamera();     
     }
 
     void FixedUpdate()
     {
-        if(!gameOver)
-        {
-            MovePlayer();
-        }
-        
+        MovePlayer();   
     }
 
     void GetInput()
@@ -59,5 +55,19 @@ public class PlayerController : MonoBehaviour
     void MoveCamera()
     {
         Camera.main.transform.position = transform.position + cameraOffset;
+    }
+
+    void FreezePlayer()
+    {
+        speed = 0;
+        rotationSpeed = 0;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag == "Goal")
+        {
+            gameStates.winner = true;
+        }
     }
 }
