@@ -7,7 +7,6 @@ public class PlayerController : MonoBehaviour
     public float speed = 5; 
     public float smoothMoveTime = .1f;
     public float rotationSpeed = 10;
-    float targetAngle;
     float angle;
     float smoothInputMagnitude;
     float smoothMoveVelocity;
@@ -16,6 +15,7 @@ public class PlayerController : MonoBehaviour
     Vector3 inputDirection;
     GameStates gameStates;
     public Vector3 cameraOffset;
+    public static event System.Action OnGoalReached;
 
     void Start()
     {
@@ -38,17 +38,21 @@ public class PlayerController : MonoBehaviour
     void GetInput()
     {
         inputDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-        float inputMagnitude = inputDirection.magnitude;
+        
+        // inputMagnitude switches between 0 and 1
+        float inputMagnitude = inputDirection.magnitude; 
+
         smoothInputMagnitude = Mathf.SmoothDamp(smoothInputMagnitude, inputMagnitude, ref smoothMoveVelocity, smoothMoveTime);
         velocity = transform.forward * speed * smoothInputMagnitude;
         
-        targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg;
-        angle = Mathf.LerpAngle(angle, targetAngle, rotationSpeed * Time.deltaTime * inputMagnitude);
+        float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg;
+        
+        // Multiplied by inputMagnitude to stop from rotating to default orientation when no input present
+        angle = Mathf.LerpAngle(angle, targetAngle, rotationSpeed * Time.deltaTime * inputMagnitude); 
     }
 
     void MovePlayer()
     {
-        // Multiplying by magnitude to prevent direction from snapping to default orientation on key release
         playerRb.MoveRotation(Quaternion.Euler(Vector3.up * angle));
         playerRb.MovePosition(playerRb.position + velocity * Time.deltaTime);
     }
@@ -67,7 +71,15 @@ public class PlayerController : MonoBehaviour
     {
         if (other.tag == "Goal")
         {
-            gameStates.winner = true;
+            if (OnGoalReached != null)
+            {
+                OnGoalReached();
+            };
         }
+    }
+
+    private void OnDestroy()
+    {
+        gameStates.OnGameOver -= FreezePlayer;
     }
 }

@@ -7,37 +7,41 @@ using System;
 
 public class GameStates : MonoBehaviour
 {
-    public bool gameOver;
-    public bool winner;
     public GameObject gameOverPanel;
     public GameObject winnerPanel;
     public event Action OnGameOver;
 
-    void Update()
+    private void Start()
     {
-        if (gameOver)
-        {
-            if (OnGameOver != null)
-            {
-                OnGameOver();
-            }
-            gameOverPanel.SetActive(true);
-        }
-        
-        if (winner)
-        {
-            if (OnGameOver != null)
-            {
-                OnGameOver();
-            }
-            winnerPanel.SetActive(true);
-        }
+        Guard.OnPlayerSpotted += GameOver;
+        PlayerController.OnGoalReached += Victory;
     }
 
     public void ReloadScene()
     {
         Scene scene = SceneManager.GetActiveScene();
         SceneManager.LoadScene(scene.name);
+    }
+
+    void GameOver()
+    {
+        EndGame(gameOverPanel);
+    }
+
+    void Victory()
+    {
+        EndGame(winnerPanel);
+    }
+
+    void EndGame(GameObject panelUI)
+    {
+        if (OnGameOver != null)
+        {
+            OnGameOver();
+        }
+        panelUI.SetActive(true);
+        PlayerController.OnGoalReached -= Victory;
+        Guard.OnPlayerSpotted -= GameOver;
     }
 
 }

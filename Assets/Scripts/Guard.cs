@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Guard : MonoBehaviour
 {
     Transform pathHolder;
     Transform player;
-
     public LayerMask obstacleMask;
     public Light spotlight;
     Color spotlightOrigColor;
@@ -14,7 +14,6 @@ public class Guard : MonoBehaviour
     float visionAngle;
     public float timeToAlarm = 2;
     float timeInSight;
-
     Vector3[] waypoints = new Vector3[1];
     Vector3 vectorToPlayer;
     public float speed = 3;
@@ -22,15 +21,18 @@ public class Guard : MonoBehaviour
     public float pauseDuration = 1;
     RaycastHit hit;
     GameStates gameStates;
+    public static event Action OnPlayerSpotted;
     private void Start()
     {
         gameStates = GameObject.FindObjectOfType<GameStates>();
-        gameStates.OnGameOver += StopAllCoroutines;
-
-        visionAngle = spotlight.spotAngle;
+        if (gameStates != null){
+            gameStates.OnGameOver += StopAllCoroutines;
+        }
+        
         player = GameObject.FindGameObjectWithTag("Player").transform;
 
         spotlightOrigColor = spotlight.color;
+        visionAngle = spotlight.spotAngle;
 
         PopulatePath();
 
@@ -38,7 +40,29 @@ public class Guard : MonoBehaviour
         transform.LookAt(waypoints[1]);
         StartCoroutine(FollowPath());
     }
-    private void OnDrawGizmos()
+
+    private void Update()
+    {
+        if (CanSeePlayer())
+        {
+            timeInSight += Time.deltaTime;
+            if (timeInSight >= timeToAlarm)
+            {
+                if(OnPlayerSpotted != null)
+                {
+                    OnPlayerSpotted();
+                }           
+            }
+        }
+        else
+        {
+            timeInSight -= Time.deltaTime;
+        }
+        spotlight.color = Color.Lerp(spotlightOrigColor, Color.red, timeInSight/timeToAlarm);
+        timeInSight = Mathf.Clamp(timeInSight, 0, timeToAlarm);
+    }
+    
+        private void OnDrawGizmos()
     {
         PopulatePath();
 
@@ -55,25 +79,6 @@ public class Guard : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, transform.forward * visionRange);
     }
-
-    private void Update()
-    {
-        if (CanSeePlayer())
-        {
-            spotlight.color = Color.Lerp(spotlight.color, Color.red, Time.deltaTime * timeToAlarm);
-            timeInSight += Time.deltaTime;
-            if (timeInSight >= timeToAlarm && !gameStates.winner)
-            {
-                gameStates.gameOver = true;
-            }
-        }
-        else 
-        {
-            timeInSight = 0;
-            spotlight.color = spotlightOrigColor;
-        }
-    }
-
     void PopulatePath()
     {
         pathHolder = transform.Find("Path");
@@ -128,7 +133,6 @@ public class Guard : MonoBehaviour
     {
         Vector3 directionToWaypoint = (lookTarget - transform.position).normalized;
         float angleToWaypoint = Mathf.Atan2(directionToWaypoint.x, directionToWaypoint.z) * Mathf.Rad2Deg;
-        //Vector3 targetEulers = new Vector3(transform.eulerAngles.x, angleToWaypoint, transform.eulerAngles.z);
         
         while(Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, angleToWaypoint)) > 0.05f)
         {
@@ -138,12 +142,12 @@ public class Guard : MonoBehaviour
         }    
     }
 
-    // IEnumerator AlarmTimer()
-    // {
-    //     spotlight.color = Color.Lerp(spotlight.color, Color.red, Time.deltaTime * timeToAlarm);
-
-    //     yield return null;
-    // }
+    private void OnDestroy()
+    {   
+        if(gameStates != null){
+            gameStates.OnGameOver -= StopAllCoroutines;
+        }      
+    }
 
     // MY SOLUTION TO PLAYER DETECTION
     // private void FixedUpdate()
